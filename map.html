@@ -218,6 +218,25 @@
       .search button:hover {
         background: rgba(255, 255, 255, 0.12);
       }
+      .status {
+        position: absolute;
+        left: 16px;
+        bottom: 16px;
+        z-index: 1000;
+        max-width: min(520px, calc(100vw - 32px));
+        padding: 10px 12px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25);
+        font-size: 12px;
+        line-height: 1.4;
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .status[hidden] {
+        display: none;
+      }
       .results {
         border-radius: 12px;
         border: 1px solid rgba(255, 255, 255, 0.12);
@@ -579,6 +598,13 @@
           max-height: 240px;
           border-radius: 12px;
         }
+        .status {
+          left: 10px;
+          right: 10px;
+          bottom: 10px;
+          max-width: none;
+          font-size: 11px;
+        }
 
         .results .item {
           padding: 7px 8px;
@@ -651,7 +677,7 @@
 
     </style>
   </head>
-  <body>
+  <body data-locations-src="./locations.json">
     <div class="shell">
       <div id="map" aria-label="Map"></div>
       <div class="controls" aria-label="Map controls">
@@ -683,6 +709,7 @@
           </div>
         </div>
       </div>
+      <div id="status" class="status" hidden aria-live="polite"></div>
     </div>
 
     <script

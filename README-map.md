@@ -1,6 +1,6 @@
 # HeyMax map (`map.js`)
 
-Browser-side map for browsing trip locations. It uses [Leaflet](https://leafletjs.com/) with CARTO *Voyager* raster tiles and loads places from `locations.json` next to the page.
+Browser-side map for browsing trip locations. It uses [Leaflet](https://leafletjs.com/) with CARTO *Voyager* raster tiles and loads places from `locations.json` next to the page by default.
 
 All map UI assets live in this **`map/`** directory (`map.html`, `map.js`, data, pins, branding).
 
@@ -38,12 +38,37 @@ Then:
 
 **On this Mac only**, you can skip the IP and use `http://localhost:8080/map/map.html` instead.
 
+## Connect `location_parser.py`
+
+`location_parser.py` already emits the shape that the map accepts:
+
+```json
+{
+  "trip_id": "trip_9382",
+  "locations": [ ... ]
+}
+```
+
+The simplest workflow is to generate a JSON file, then have the map load that file:
+
+```bash
+python location_parser.py --use-dummy --pretty > locations.generated.json
+```
+
+Then open the map with a query parameter:
+
+```text
+http://localhost:8080/map/map.html?locations=./locations.generated.json
+```
+
+You can also point the default page shell at a different file by changing `data-locations-src` on the `<body>` element in `map.html`.
+
 ## Data: `locations.json`
 
-Fetched at `./locations.json` (no cache), next to `map.js`. Supported shapes:
+Fetched from `./locations.json` by default (no cache), or from the `?locations=...`, `?locationsUrl=...`, or `?data=...` query parameter. Supported shapes:
 
 - A JSON **array** of location objects, or
-- An object with a **`locations`** array (other top-level fields like `trip_id` are ignored by the map).
+- An object with a **`locations`** array (`trip_id` is read and shown in the status message when present).
 
 Each location should include:
 
@@ -64,7 +89,7 @@ Each location should include:
 - **Pins:** PNGs under `./pins/` (relative to `map.js`). Unknown categories fall back to small colored dots.
 - **Clustering:** At zoom ≤ 13, nearby markers in view are grouped into count bubbles; clicking a cluster zooms to fit its members.
 - **Search:** Filters the in-memory list by name/address substring (case-insensitive).
-- **Status line:** `map.js` calls `setStatus()` which targets `#status` if present; the current `map.html` does not define that element, so status messages are optional/no-op unless you add `<div id="status" …>`.
+- **Status line:** `map.html` now includes `#status`, and `map.js` reports the loaded source file and `trip_id` when available.
 
 ## Related files
 
@@ -72,7 +97,7 @@ Each location should include:
 |-------------|------|
 | `map.html` | Page shell, styles, Leaflet, loads `map.js` |
 | `map.js` | Map logic, markers, clustering, search, filters |
-| `locations.json` | Location data |
+| `locations.json` | Default location data |
 | `pins/` | Pin images for categories |
 | `logo/`, `heymax.png` | Brand images referenced by `map.html` |
 

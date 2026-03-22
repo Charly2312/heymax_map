@@ -177,13 +177,37 @@ function isValidLatLng(lat, lng) {
   );
 }
 
-async function loadLocations() {
-  const res = await fetch("./locations.json", { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load locations.json (${res.status})`);
+function getConfiguredLocationsUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery =
+    params.get("locations") ||
+    params.get("locationsUrl") ||
+    params.get("data") ||
+    "";
+  const fromDataset = document.body?.dataset?.locationsSrc || "";
+  return fromQuery || fromDataset || "./locations.json";
+}
+
+async function loadLocationPayload() {
+  const locationsUrl = getConfiguredLocationsUrl();
+  const res = await fetch(locationsUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load ${locationsUrl} (${res.status})`);
   const data = await res.json();
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.locations)) return data.locations;
-  throw new Error("locations.json must be an array or { locations: [...] }");
+  if (Array.isArray(data)) {
+    return {
+      tripId: "",
+      locations: data,
+      locationsUrl,
+    };
+  }
+  if (Array.isArray(data?.locations)) {
+    return {
+      tripId: String(data?.trip_id ?? ""),
+      locations: data.locations,
+      locationsUrl,
+    };
+  }
+  throw new Error(`${locationsUrl} must be an array or { locations: [...] }`);
 }
 
 function initMap() {
@@ -207,13 +231,15 @@ async function main() {
   setStatus("Loading locations…");
   const map = initMap();
 
-  let locations;
+  let payload;
   try {
-    locations = await loadLocations();
+    payload = await loadLocationPayload();
   } catch (err) {
     setStatus(`Error: ${err?.message || String(err)}`, { isError: true });
     return;
   }
+  const locations = payload.locations;
+  const tripId = payload.tripId;
 
   const bounds = L.latLngBounds([]);
   let added = 0;
@@ -643,14 +669,14 @@ async function main() {
     map.fitBounds(bounds.pad(0.15), { animate: false });
     setStatus(
       skipped > 0
-        ? `Loaded ${added} locations. Skipped ${skipped} with invalid coordinates.`
-        : `Loaded ${added} locations.`,
+        ? `Loaded ${added} locations${tripId ? ` for ${tripId}` : ""} from ${payload.locationsUrl}. Skipped ${skipped} with invalid coordinates.`
+        : `Loaded ${added} locations${tripId ? ` for ${tripId}` : ""} from ${payload.locationsUrl}.`,
     );
   } else {
     setStatus(
       skipped > 0
-        ? `No valid coordinates found. Skipped ${skipped} locations.`
-        : "No locations found.",
+        ? `No valid coordinates found in ${payload.locationsUrl}. Skipped ${skipped} locations.`
+        : `No locations found in ${payload.locationsUrl}.`,
       { isError: true },
     );
   }
